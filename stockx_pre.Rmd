@@ -1,0 +1,314 @@
+---
+title: "stox"
+output: html_document
+---
+
+```{r message=FALSE,warning=FALSE}
+library(readr)
+library(tidyverse)
+#setwd("C:/Users/guozx/Desktop/stoxsale")
+setwd("C:/Users/Klazy/Desktop/stoxsale")
+Sys.setlocale("LC_TIME", "English")
+#as.POSIXlt("2011-JAN-27 01:30:00", format="%Y-%b-%d %H:%M:%S")
+#rm(t11)
+```
+
+```{r}
+ad0 <- read_csv("Shoes/Adidas.csv", col_types = cols(X1 = col_skip(), highestBid = col_number(), lowestAsk = col_number(), retailPrice = col_number(), salesLast72Hours = col_number(), salesThisPeriod = col_number()))
+aj0 <- read_csv("Shoes/Air_Jodan.csv", col_types = cols(X1 = col_skip(), highestBid = col_number(), lowestAsk = col_number(), retailPrice = col_number(), salesLast72Hours = col_number(), salesThisPeriod = col_number()))
+nk0 <- read_csv("Shoes/Nike.csv", col_types = cols(X1 = col_skip(), highestBid = col_number(), lowestAsk = col_number(), retailPrice = col_number(), salesLast72Hours = col_number(), salesThisPeriod = col_number()))
+shoes<-rbind(ad0,aj0,nk0)
+dp2<-shoes[duplicated(shoes$id),]
+shoes=shoes[!duplicated(shoes$id),]
+shoes$release<-as.POSIXct(shoes$releaseDate, format="%Y-%m-%d %H:%M:%S",tz="GMT")
+#sum(is.na(shoes$releaseDate))
+#sum(is.na(shoes$release))
+#shoes%>%filter(is.na(release))%>%select(c('id','name','releaseDate','release'))
+rm(ad0,aj0,nk0)
+#head(shoes)
+```
+
+```{r}
+ad <- read_delim("Sales/TXT/adidas_sales.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+    col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+aj <- read_delim("Sales/TXT/aj_sales.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+    col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+nk <- read_delim("Sales/TXT/nike_sales.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+   col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+names(ad)<-c('id','chainid','amount','createtime','shoesize')
+names(aj)<-c('id','chainid','amount','createtime','shoesize')
+names(nk)<-c('id','chainid','amount','createtime','shoesize')
+ad$time<-as.POSIXct(ad$createtime, format="%d-%b-%Y %H:%M:%S",tz="GMT")
+aj$time<-as.POSIXct(aj$createtime, format="%d-%b-%Y %H:%M:%S",tz="GMT")
+nk$time<-as.POSIXct(nk$createtime, format="%Y-%M-%D %H:%M:%S",tz="GMT")
+sales<-rbind(ad,aj,nk)
+sales$size<-as.numeric(gsub("W|Y|K|C","",sales$shoesize))
+sum(is.na(sales))
+#sales%>%filter(!complete.cases(.))
+#sales%>%filter(shoesize=="7W")
+rm(ad,aj,nk)
+```
+
+```{r}
+
+show3<-function(t){
+    t%>%arrange(desc(mean))%>%ggplot(mapping = aes(x=reorder(category, mean), y=mean)) + geom_bar(stat = "identity", aes(fill=category),width=0.6)+theme_light() +coord_flip() + labs(title="Sneaker Brands Comparison", x="Brand", y="Mean Price (USD)")+geom_text(aes(label=as.integer(mean)),vjust=0.4,hjust=1.5,color="white",position=position_dodge(0.9),size=5)+guides(fill = FALSE)
+}
+show3(getmean(shoes[1:100,],"highestBid","mean"))
+shoes$img[1:10]
+href=shoes$img[1]
+paste0("https://stockx.com/",substring(href,26,regexpr("-Product.",href)-1))
+
+
+
+href
+```
+
+```{r}
+sales$size<-as.factor(sales$size)
+sales<-sales[,c(1,2,3,6,7)]
+sales<-sales[!duplicated(sales),]
+ids<-sales%>%group_by(id)%>%summarise(n=n(),max=max(time),min=min(time),df=as.numeric(max-min)+1,total=sum(amount),f1=n/df,f2=total/df)
+ids<-ids[order(ids$f1,decreasing = T),]
+head(sales,n=2)
+#ids
+#ids%>%filter(ids$f1>10)
+```
+
+```{r}
+brands<-shoes%>%group_by(brand,category)%>%summarize()
+shoes%>%group_by(brand,category)%>%summarize()
+shoes%>%group_by(brand)%>%summarize()
+
+shoes[(shoes$category==brands$category[1:2]),]
+shoes[(shoes$category==c("Air Max 95","Air Max 98")),]
+shoes[(shoes$category==c("Air Max 95")),]
+shoes[(shoes$category==c("Air Max 98")),]
+shoes[(shoes$category==c("Air Max 98")),]
+t3<-rbind(shoes[(shoes$category==c("Air Max 98")),],shoes[(shoes$category==c("Air Max 95")),])
+t3
+t3[(t3$category %in% c("Air Max 95","Air Max 98")),]
+```
+
+```{r include=FALSE}
+## about duplicate
+## -> all duplicated is downloading problem
+## -> 6 item have more than 100 rows, they are records in 7.4, not duplicated
+sales0<-sales
+du<-sales[duplicated(sales),]%>%group_by(id)%>%summarise(n=n())
+tmp<-c(c())
+tmp2<-c()
+for(i in 1:nrow(du)){
+  if(du$n[i]%%100==0){
+    sales<-sales[(!duplicated(sales)) | (sales$id!=du$id[i]),]
+    next
+  }
+  x1<-sales[sales$id==du$id[i],]
+  for (j in 2:nrow(x1)) {
+    if(x1$time[j-1]<x1$time[j]){
+      if(du$n[i]==(j-1)){
+        sales<-sales[(!duplicated(sales)) | (sales$id!=du$id[i]),]
+        break
+      }
+      #print(du$id[i])
+      tmp<-c(tmp,du$id[i],j,du$n[i])
+      break
+    }
+    if(j==nrow(x1)){
+      tmp2<-c(tmp2,du$id[i],du$n[i])
+    }
+  }
+}
+
+matrix(tmp,ncol=3,byrow = T)
+tmp2
+tmp<-matrix(tmp,ncol=3,byrow = T)
+for(i in 1:nrow(tmp)){
+  x1<-sales[sales$id==tmp[i,1],]
+  for (j in 2:nrow(x1)) {
+    if(x1$time[j-1]==x1$time[j]){
+      print(tmp[i,1])
+      break
+    }
+  }
+}
+dp3<-sales%>%group_by(id)%>%summarise(n=n())%>%filter(n>100)
+sales%>%filter(id==dp3$id[6])
+```
+
+```{r}
+substring("1234567890",1,25)
+#id2<-merge(ids,shoes,by="id",all.x=T)[,c('id','brand','category','name','shoe')]
+#id3<-shoes%>%group_by(id)%>%summarise(n=n())
+#id3%>%filter(n>1)
+shoes%>%group_by(brand)%>%summarise(n=n())
+shoes%>%group_by(category)%>%summarise(n=n())
+shoes%>%group_by(name)%>%summarise(n=n())
+shoes%>%group_by(brand,category)%>%summarise(n=n())
+merge(ids,shoes,by="id",all.x=T)[,'name']
+
+x1[order(x1$chainid),]
+nrow(sales[duplicated(sales),]%>%filter(id==dp3$id[1]))
+x<-sales[duplicated(sales),]%>%filter(id==dp3$id[1])
+y<-sales[(!duplicated(sales)) | (sales$id!=dp3$id[1]),]
+dp2
+sales[sales$chainid=="13103043894102409642",]
+sales[sales$id=="ec27cef2-88aa-444e-8bf7-8029fced816c",]
+shoes[shoes$name=="Chinese New Year (2018)",]
+shoes$cate2<-shoes$category
+shoes$cate2[grep("Air Force",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Air Force"
+
+ggplot(data = sales[sales$id==ids[[1,1]],],mapping=aes(x=size,y=amount,fill=as.character(size)))+geom_boxplot()
+```
+
+```{r}
+shoes$cate2<-shoes$category
+shoes$cate2[shoes$brand=="Nike"] <- "Other"
+shoes$cate2[grep("Air Force",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Air Force"
+shoes$cate2[grep("Air Max",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Air Max"
+shoes$cate2[grep("Basketball",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Basketball"
+shoes$cate2[grep("Foamposite",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Foamposite"
+shoes$cate2[grep("KD",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "KD"
+shoes$cate2[grep("Kobe",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "Kobe"
+shoes$cate2[grep("LeBron",shoes$category, ignore.case=TRUE, fixed=FALSE)] <- "LeBron"
+shoes%>%group_by(brand,cate2)%>%summarise(n=n())
+shoes%>%group_by(cate2,category)%>%summarise(n=n())
+t2<-merge(ids[1:3,],shoes,by="id",all.x=T)
+#t2
+apply(t2,1,function(item){
+  box(width = NULL,
+                   title = HTML(paste0("<h2>",item['brand'],"</h2>",
+                                       "<p>",item['name'],"</p>",
+                                       "<img src=",item['img'],"/>")
+                                )
+                )
+})
+paste("12","we",sep = " ")
+```
+
+```{r}
+shoes%>%group_by(cate2,category)%>%summarise(n=n())
+library(wordcloud)
+wordcloud(words = merge(ids,shoes[(shoes$category==brands$category[1:2]),],by="id",all=F)[,'name'],freq = replace(ids$f2/1000,ids$f2/1000>50,50),max.words = 30,random.order = F,rot.per = 0.35,min.freq = 1,colors=brewer.pal(8, "Dark2"))
+
+```
+
+```{r}
+# wordcloud(words = substring(ids$id,1,5),freq = replace(ids$f1/10,ids$f1/10>50,50),max.words = 30,random.order = F,rot.per = 0.35,min.freq = 1,colors=brewer.pal(8, "Dark2"))
+
+wordcloud(words = merge(ids,shoes,by="id",all.x=T)[,'name'],freq = replace(ids$f1/10,ids$f1/10>50,50),max.words = 30,random.order = F,rot.per = 0.35,min.freq = 1,colors=brewer.pal(8, "Dark2"))
+
+```
+
+```{r}
+time0=as.POSIXct("01-MAR-2019 00:00:00", format="%d-%b-%Y %H:%M:%S",tz="GMT")
+time1=as.POSIXct("05-JUL-2019 00:00:00", format="%d-%b-%Y %H:%M:%S",tz="GMT")
+
+for (i in 1:4) {
+  p2<-ggplot(data = sales[sales$id==ids[[i,1]],],mapping=aes(x=time,y=amount,color=size))+geom_point(size=2,alpha=0.7)+xlim(time0,time1)
+  plot(p2)
+}
+```
+
+
+```{r}
+#write.csv(ad,"Sales/ad_sale1.csv",row.names = FALSE)
+#write.csv(aj,"Sales/aj_sale1.csv",row.names = FALSE)
+#write.csv(nk,"Sales/nk_sale1.csv",row.names = FALSE)
+```
+
+
+-------------------sale ask bid-------------------------------------------
+```{r}
+setwd("C:/Users/Klazy/Desktop/stoxsale/f_sales")
+f480 <- read_delim("f4801.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+    col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+f400 <- read_delim("f4001.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+    col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+f300 <- read_delim("f3001.txt", "\t", escape_double = FALSE, col_names = FALSE, 
+    col_types = cols(X2 = col_character(),X5 = col_character()), trim_ws = TRUE)
+```
+
+```{r}
+names(f480)<-c('shoeid','chainid','amount','createtime','shoesize','skuid')
+names(f400)<-c('shoeid','chainid','amount','createtime','shoesize','skuid','frequency')
+names(f300)<-c('shoeid','chainid','amount','createtime','shoesize','skuid','frequency')
+f480$time<-as.POSIXct(f480$createtime, format="%d-%b-%Y %H:%M:%S")
+f400$time<-as.POSIXct(f400$createtime, format="%d-%b-%Y %H:%M:%S")
+f300$time<-as.POSIXct(f300$createtime, format="%d-%b-%Y %H:%M:%S")
+head(f480,n=2)
+head(f400,n=2)
+head(f300,n=2)
+```
+
+
+```{r}
+f480%>%group_by(shoeid)%>%summarise(n=n())
+f400%>%group_by(shoeid)%>%summarise(n=n())
+f300%>%group_by(shoeid)%>%summarise(n=n())
+```
+
+```{r}
+n1<-function(f480,id480){
+  id<-f480%>%group_by(shoeid)%>%summarise()
+  x<-f480%>%filter(shoeid==id480)%>%group_by(skuid,shoesize,shoeid)%>%summarise(n=n())
+  x[order(as.numeric(x$shoesize)),]
+}
+
+
+f5<-rbind(f480[,1:6],f300[,1:6],f400[,1:6])
+f5%>%group_by(shoeid)%>%summarise()
+n1(f400,"49c52f79-b1c5-4200-9792-b9d55f67a76f")
+
+f6<-f5%>%group_by(shoeid,shoesize,skuid)%>%summarise(n=n())
+f6[duplicated(f6[,1:2]),]
+f6[f6$shoeid=="49c52f79-b1c5-4200-9792-b9d55f67a76f" & f6$shoesize=="10.5",]
+f6<-f6[f6$skuid!="3aed6b22-d80a-412e-8200-f34b3d216ccf",]
+f400%>%filter(shoeid=="49c52f79-b1c5-4200-9792-b9d55f67a76f")
+f6[(f6$skuid=="3aed6b22-d80a-412e-8200-f34b3d216ccf"),]
+# f480:
+# a9733a12-ae76-4508-93c1-6a61a1f42082
+# f400:
+# 3aed6b22-d80a-412e-8200-f34b3d216ccf
+# 
+# f300:
+# a9733a12-ae76-4508-93c1-6a61a1f42082
+```
+
+
+```{r}
+write.csv(f6,"skuid.csv",row.names = FALSE)
+write.csv(f480,"sales.csv",row.names = FALSE)
+write.csv(f400,"ask.csv",row.names = FALSE)
+write.csv(f300,"bid.csv",row.names = FALSE)
+write.csv(sales,"ss7.csv",row.names = FALSE)
+ss8<-merge(sales,shoes,by="id",all.x=T)[,c('id','chainid','amount','time','size','brand')]
+write.csv(ss8,"ss8.csv",row.names = FALSE)
+```
+
+```{r}
+id<-f480%>%group_by(shoeid)%>%summarise()
+```
+
+
+```{r}
+for (i in 1:20) {
+  p2<-ggplot(data = f480[f480$shoeid==id[[i,1]],],mapping=aes(x=time,y=amount,color=shoesize))+geom_point(size=0.3,alpha=0.7)
+  plot(p2)
+}
+```
+
+```{r include=FALSE}
+x1 <- read_csv("C:/Users/Klazy/Desktop/data/1.csv", col_names = FALSE)
+x2 <- read_csv("C:/Users/Klazy/Desktop/data/2.csv", col_names = FALSE)
+x3 <- read_csv("C:/Users/Klazy/Desktop/data/3.csv", col_names = FALSE)
+x4 <- read_csv("C:/Users/Klazy/Desktop/data/4.csv", col_names = FALSE)
+x5 <- read_csv("C:/Users/Klazy/Desktop/data/5.csv", col_names = FALSE)
+x6 <- read_csv("C:/Users/Klazy/Desktop/data/6.csv", col_names = FALSE)
+x7 <- read_csv("C:/Users/Klazy/Desktop/data/7.csv", col_names = FALSE)
+x8 <- read_csv("C:/Users/Klazy/Desktop/data/8.csv", col_names = FALSE)
+xx<-rbind(X1,x2,x3,x4,x5,x6,x7,x8)
+write.csv(xx,"xx.csv",row.names = FALSE)
+```
+
+
