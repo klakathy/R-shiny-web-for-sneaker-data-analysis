@@ -9,12 +9,16 @@ The data used is collected from StockX.com with Python. Main part of the code is
 Main code of data preprocessing is included as stockx_pre.Rmd. Clean data can also be seen from csv files in www/csv.
 
 ## Description page
-
+![img](readme_img/home.png)
 ## Data overview page
-
+![img](readme_img/data.png)
 ## Visualization page
-
+![img](readme_img/visual1.png)
+![img](readme_img/visual2.png)
+![img](readme_img/visual3.png)
 ## Draw to match page
+![img](readme_img/color1.png)
+![img](readme_img/color2.png)
 
 <br/><br/>
-The website is published using r shiny app. LINK:https://datafromstockx.shinyapps.io/Sneaker/(https://datafromstockx.shinyapps.io/Sneaker/).
+The website is published using r shiny app. LINK:[https://datafromstockx.shinyapps.io/Sneaker/](https://datafromstockx.shinyapps.io/Sneaker/).
