@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" >
+    <head>
+        <meta charset="utf-8" />
+        <meta name="author" content="Script Tutorials" />
+        <title>HTML5 Color Picker (canvas) - Var 4 | Script Tutorials</title>
+
+        <!-- add styles -->
+        <link href="css/main.css" rel="stylesheet" type="text/css" />
+
+        <!-- add scripts -->
+        <!-- <script src="js/jquery.js"></script> -->
+        <!-- <script src="js/script.js"></script> -->
+	<!-- <script src="js/getcanvaspixelcolor1.js" type="text/javascript"></script> -->
+    </head>
+    <body>
+
+
+        <div class="container">
+
+            <!-- preview element -->
+            <div class="preview" style="background-color:black;"></div>
+		
+            <!-- colorpicker element -->
+            <div class="colorpicker" id='COL' >
+                <canvas id="picker" var="4" width="300" height="300"></canvas>
+
+                <div class="controls">
+                    <div><label>R</label> <input type="text" id="rVal" /></div>
+                    <div><label>G</label> <input type="text" id="gVal" /></div>
+                    <div><label>B</label> <input type="text" id="bVal" /></div>
+                    <div><label>RGB</label> <input type="text" id="rgbVal" /></div>
+                    <div><label>HEX</label> <input type="text" id="hexVal" /></div>
+                </div>
+
+
+            </div>
+		
+	    <canvas id="draw"  style="width:550px;height:450px;background-image:url('images/zm.jpg');background-repeat:no-repeat;background-size:100% 100%;-moz-background-size:100% 100%;"></canvas>
+
+		<div>
+	    	   <p id="c1"></p>
+		   <p id="c2"></p>
+		   <p id="c3"></p>
+		   <p id="c4"></p>
+		   <p id="c5"></p>
+		   <p id="c5"></p>
+		   <p id="c6"></p>
+		   <p id="c7"></p>
+		   <p id="c8"></p>
+		</div>
+         </div>
+    </body>
+
+<script>
+
+const canvas = document.querySelector('#draw');
+const ctx = canvas.getContext('2d');
+canvas.width = 550;
+canvas.height = 450;
+ctx.strokeStyle = '#BADA55'; 
+ctx.lineJoin = 'round';
+ctx.lineCap = 'round';
+ctx.lineWidth = 40;
+//ctx.globalCompositeOperation = 'multiply';
+ctx.globalAlpha = 1; 
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let hue = 0;
+let direction = true;
+Color = `hsl(${hue}, 100%, 40%)`;
+function draw(e) {
+    
+    if (!isDrawing) return; // stop the fn from running when they are not moused down
+    // console.log(e);
+    ctx.strokeStyle = document.getElementById('hexVal').value;
+    ctx.beginPath();
+    // start from
+    ctx.moveTo(lastX, lastY);
+    // go to
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+
+    hue++;
+    if (hue >= 360) {
+        hue = 0;
+    }
+    //if (ctx.lineWidth >= 100 || ctx.lineWidth <= 1) {
+        //direction = !direction;
+    //}
+
+    //if (direction) {
+        //ctx.lineWidth++;
+    //} else {
+        //ctx.lineWidth--;
+    //}
+
+}
+
+
+
+
+
+
+
+canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    [lastX, lastY] = [e.offsetX, e.offsetY];
+});
+
+
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseout', () => isDrawing = false);
+
+let cans=document.getElementById("draw");
+    function imgType(ty) {
+        let type = ty.toLowerCase().replace(/jpg/i, 'jpeg');
+        var r = type.match(/png|jpeg|bmp|gif/)[0];
+        return 'image/' + r;
+    }
+
+   function download() {
+ 
+        let type = 'png';   
+ 
+        let img_png_src = cans.toDataURL("image/png");  
+ 
+        let imgData = img_png_src.replace(imgType(type),'image/octet-stream');
+ 
+        let filename = 'img' + '.' + type; 
+ 	
+        document.getElementById("c1").innerHTML = document.getElementById("draw").getPixelColor(120, 180).rgba;
+  	document.getElementById("c2").innerHTML = document.getElementById("draw").getPixelColor(240, 180).rgba;
+  	document.getElementById("c3").innerHTML = document.getElementById("draw").getPixelColor(170, 260).rgba;
+	document.getElementById("c4").innerHTML = document.getElementById("draw").getPixelColor(110, 280).rgba;
+	document.getElementById("c5").innerHTML = document.getElementById("draw").getPixelColor(320, 300).rgba;
+	document.getElementById("c6").innerHTML = document.getElementById("draw").getPixelColor(330, 240).rgba;
+	document.getElementById("c7").innerHTML = document.getElementById("draw").getPixelColor(380, 300).rgba;
+	document.getElementById("c8").innerHTML = document.getElementById("draw").getPixelColor(420, 235).rgba;
+  	
+
+    }
+
+
+
+ 
+
+    let saveFile = function(data, fileName){
+        let save_link = document.createElement('a');
+        save_link.href = data;
+        save_link.download = fileName;
+ 
+        let event = document.createEvent('MouseEvents');
+        event.initEvent("click", true, false);
+        save_link.dispatchEvent(event);
+    };
+
+
+</script>
+
+
+</html>
