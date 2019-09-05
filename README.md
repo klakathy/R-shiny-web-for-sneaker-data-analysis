@@ -1,5 +1,5 @@
-# R-shiny-web-for-sneaker-data-analysis
-using r shiny, python
+# Sneaker visualization and recommendation
+*A data visualization and color-matching recommendation website for sneakers based on R Shiny*
 
 <br/><br/>
 This is a group project for a course. A website is made with R Shiny App to analyze and visualize the data of sneaker sellings. 
